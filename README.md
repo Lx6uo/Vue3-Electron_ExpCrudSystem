@@ -7,8 +7,8 @@
 - 前端框架：Vue 3 + TypeScript + Composition API
 - UI组件库：Element Plus
 - 桌面应用框架：Electron
-- 数据库：MySQL
-- 数据库访问：mysql2
+- 数据库：SQLite
+- 数据库访问：better-sqlite3
 - 构建工具：Vite
 - 状态管理：Pinia
 
@@ -27,62 +27,63 @@
 
 ## 数据库设置
 
-在使用本应用前，请先在MySQL中执行以下SQL脚本创建所需的数据库和表：
+应用会自动创建并初始化SQLite数据库，无需手动设置。数据库文件将保存在应用的`data`目录下。
+
+数据库表结构如下：
 
 ```sql
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS production_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- 使用数据库
-USE production_management;
--- 创建生产线信息表
+-- 生产线信息表
 CREATE TABLE IF NOT EXISTS production_lines (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  line_number VARCHAR(20) NOT NULL UNIQUE COMMENT '生产线编号',
-  line_name VARCHAR(50) NOT NULL COMMENT '生产线名称',
-  line_type ENUM('车身', '涂装', '总装') NOT NULL COMMENT '生产线类型',
-  shift INT NOT NULL DEFAULT 0 COMMENT '班次',
-  speed FLOAT NOT NULL DEFAULT 0 COMMENT '线速',
-  efficiency FLOAT NOT NULL DEFAULT 0 COMMENT '运行效率',
-  `group` INT COMMENT '组号',
-  flow_code VARCHAR(20) COMMENT '流程代码',
-  abbreviation VARCHAR(10) COMMENT '生产线简称',
-  operator_id VARCHAR(50) COMMENT '操作人员ID',
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  line_number TEXT NOT NULL UNIQUE,
+  line_name TEXT NOT NULL,
+  line_type TEXT NOT NULL CHECK(line_type IN ('车身', '涂装', '总装')),
+  shift INTEGER NOT NULL DEFAULT 0,
+  speed REAL NOT NULL DEFAULT 0,
+  efficiency REAL NOT NULL DEFAULT 0,
+  "group" INTEGER,
+  flow_code TEXT,
+  abbreviation TEXT,
+  operator_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- 创建生产线特殊信息表
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 生产线特殊信息表
 CREATE TABLE IF NOT EXISTS production_line_special_info (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  production_line_id INT NOT NULL COMMENT '关联的生产线ID',
-  code_type ENUM('WhiteBodyCode', 'ColorCode') NOT NULL COMMENT '编码类型：WhiteBodyCode(白车身码) 或 ColorCode(颜色码)',
-  code_value VARCHAR(10) NOT NULL COMMENT '编码值',
-  operator_id VARCHAR(50) COMMENT '操作人员ID',
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  production_line_id INTEGER NOT NULL,
+  code_type TEXT NOT NULL CHECK(code_type IN ('WhiteBodyCode', 'ColorCode')),
+  code_value TEXT NOT NULL,
+  line_type TEXT NOT NULL CHECK(line_type IN ('车身', '涂装', '总装')),
+  operator_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (production_line_id) REFERENCES production_lines(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE KEY unique_line_code_type_value (production_line_id, code_type, code_value),
-  UNIQUE KEY unique_code_type_value (code_type, code_value)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- 创建特殊发动机表
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (production_line_id) REFERENCES production_lines(id) ON DELETE CASCADE,
+  UNIQUE (code_type, code_value, line_type)
+);
+
+-- 特殊发动机表
 CREATE TABLE IF NOT EXISTS special_engines (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  engine_code VARCHAR(10) NOT NULL UNIQUE COMMENT '发动机代码',
-  gear VARCHAR(10) NOT NULL COMMENT '档位',
-  engine_name VARCHAR(50) NOT NULL COMMENT '发动机名称',
-  operator_id VARCHAR(50) COMMENT '操作人员ID',
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  engine_code TEXT NOT NULL UNIQUE,
+  gear TEXT NOT NULL,
+  engine_name TEXT NOT NULL,
+  operator_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- 创建计划颜色表
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 计划颜色表
 CREATE TABLE IF NOT EXISTS planned_colors (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  color_code VARCHAR(10) NOT NULL UNIQUE COMMENT '颜色代码',
-  color_name VARCHAR(50) NOT NULL COMMENT '颜色名称',
-  top_coat_color VARCHAR(50) COMMENT '面漆颜色',
-  operator_id VARCHAR(50) COMMENT '操作人员ID',
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  color_code TEXT NOT NULL UNIQUE,
+  color_name TEXT NOT NULL,
+  top_coat_color TEXT,
+  operator_id TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ## 安装与运行
@@ -90,7 +91,6 @@ CREATE TABLE IF NOT EXISTS planned_colors (
 ### 环境要求
 
 - Node.js 16+
-- MySQL 5.7+
 
 ### 安装步骤
 
@@ -109,14 +109,10 @@ pnpm install --registry=https://registry.npmmirror.com/
 
 3. 配置数据库
 
-编辑 `config/database.json` 文件，填入您的数据库连接信息：
+编辑 `config/database.json` 文件，填入您的数据库名称：
 
 ```json
 {
-  "host": "localhost",
-  "port": 3306,
-  "user": "your_username",
-  "password": "your_password",
   "database": "production_management"
 }
 ```

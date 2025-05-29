@@ -39,7 +39,7 @@ export function setupIpcHandlers() {
         data.efficiency, data.group, data.flow_code, data.abbreviation, operator]
       );
 
-      return { success: true, id: (result as any).insertId };
+      return { success: true, id: result.insertId };
     } catch (error) {
       console.error('添加生产线失败:', error);
       throw new Error('添加生产线失败');
@@ -134,7 +134,7 @@ export function setupIpcHandlers() {
         [data.production_line_id, data.code_type, data.code_value, line_type, operator]
       );
 
-      return { success: true, id: (result as any).insertId };
+      return { success: true, id: result.insertId };
     } catch (error) {
       console.error('添加生产线特殊信息失败:', error);
       throw new Error('添加生产线特殊信息失败: ' + (error as Error).message);
@@ -176,7 +176,7 @@ export function setupIpcHandlers() {
         [data.engine_code, data.gear, data.engine_name, operator]
       );
 
-      return { success: true, id: (result as any).insertId };
+      return { success: true, id: result.insertId };
     } catch (error) {
       console.error('添加特殊发动机失败:', error);
       throw new Error('添加特殊发动机失败');
@@ -237,7 +237,7 @@ export function setupIpcHandlers() {
         [data.color_code, data.color_name, data.top_coat_color, operator]
       );
 
-      return { success: true, id: (result as any).insertId };
+      return { success: true, id: result.insertId };
     } catch (error) {
       console.error('添加计划用颜色失败:', error);
       throw new Error('添加计划用颜色失败');

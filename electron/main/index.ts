@@ -80,10 +80,15 @@ app.whenReady().then(async () => {
     const configPath = join(app.isPackaged ? process.resourcesPath : ROOT_PATH.dist, 'config/database.json')
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
 
+    // 简化配置，SQLite只需要数据库名称
+    const sqliteConfig = {
+      database: config.database || 'production_management'
+    }
+
     // 连接数据库
-    const connected = await connectToDatabase(config)
+    const connected = await connectToDatabase(sqliteConfig)
     if (!connected) {
-      dialog.showErrorBox('数据库连接失败', '请检查数据库配置和确保MySQL服务已启动')
+      dialog.showErrorBox('数据库连接失败', '无法创建或连接到SQLite数据库')
     }
 
     // 设置IPC处理程序

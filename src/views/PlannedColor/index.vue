@@ -4,7 +4,6 @@
             <template #header>
                 <div class="card-header">
                     <span>计划用颜色配置</span>
-                    <el-button type="primary" @click="resetForm">新增颜色配置</el-button>
                 </div>
             </template>
 
@@ -54,10 +53,12 @@
                     </el-col>
                 </el-row>
 
-                <el-form-item>
-                    <el-button type="primary" @click="submitForm">{{ formData.id ? '更新' : '添加' }}</el-button>
-                    <el-button @click="resetForm">重置</el-button>
-                </el-form-item>
+                <div style="margin-top: 30px;">
+                    <el-form-item>
+                        <el-button type="primary" @click="submitForm">{{ formData.id ? '更新' : '添加' }}</el-button>
+                        <el-button @click="resetForm">重置</el-button>
+                    </el-form-item>
+                </div>
             </el-form>
         </el-card>
     </div>
@@ -148,11 +149,19 @@ async function submitForm() {
     await formRef.value.validate(async (valid) => {
         if (valid) {
             try {
+                // 创建普通对象副本，避免传递响应式对象
+                const submitData = {
+                    id: formData.id,
+                    color_code: formData.color_code,
+                    color_name: formData.color_name,
+                    top_coat_color: formData.top_coat_color
+                }
+
                 if (formData.id) {
-                    await window.api.updatePlannedColor(formData)
+                    await window.api.updatePlannedColor(submitData)
                     ElMessage.success('更新成功')
                 } else {
-                    await window.api.addPlannedColor(formData)
+                    await window.api.addPlannedColor(submitData)
                     ElMessage.success('添加成功')
                 }
 

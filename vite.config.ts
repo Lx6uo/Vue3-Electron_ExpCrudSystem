@@ -16,6 +16,10 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist-electron/main',
+            rollupOptions: {
+              // 处理better-sqlite3原生模块
+              external: ['better-sqlite3'],
+            },
           },
         },
       },
@@ -29,7 +33,12 @@ export default defineConfig({
         },
       },
     ]),
-    renderer(),
+    renderer({
+      // 允许在渲染进程中使用Node.js API
+      nodeIntegration: true,
+      // 处理better-sqlite3原生模块
+      external: ['better-sqlite3'],
+    }),
   ],
   resolve: {
     alias: {

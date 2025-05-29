@@ -4,7 +4,6 @@
             <template #header>
                 <div class="card-header">
                     <span>生产线信息</span>
-                    <el-button type="primary" @click="resetForm">新增生产线</el-button>
                 </div>
             </template>
 
@@ -102,10 +101,12 @@
                             </el-col>
                         </el-row>
 
-                        <el-form-item>
-                            <el-button type="primary" @click="submitForm">{{ formData.id ? '更新' : '添加' }}</el-button>
-                            <el-button @click="resetForm">重置</el-button>
-                        </el-form-item>
+                        <div style="margin-top: 30px;">
+                            <el-form-item>
+                                <el-button type="primary" @click="submitForm">{{ formData.id ? '更新' : '添加' }}</el-button>
+                                <el-button @click="resetForm">重置</el-button>
+                            </el-form-item>
+                        </div>
                     </el-form>
                 </el-tab-pane>
 
@@ -320,11 +321,25 @@ async function submitForm() {
                 formData.line_number = formData.line_number.toUpperCase()
                 formData.line_name = formData.line_name.toUpperCase()
 
+                // 创建普通对象副本，避免传递响应式对象
+                const submitData = {
+                    id: formData.id,
+                    line_number: formData.line_number,
+                    line_name: formData.line_name,
+                    line_type: formData.line_type,
+                    shift: formData.shift,
+                    speed: formData.speed,
+                    efficiency: formData.efficiency,
+                    group: formData.group,
+                    flow_code: formData.flow_code,
+                    abbreviation: formData.abbreviation
+                }
+
                 if (formData.id) {
-                    await window.api.updateProductionLine(formData)
+                    await window.api.updateProductionLine(submitData)
                     ElMessage.success('更新成功')
                 } else {
-                    const result = await window.api.addProductionLine(formData)
+                    const result = await window.api.addProductionLine(submitData)
                     selectedLineId.value = result.id
                     ElMessage.success('添加成功')
                 }

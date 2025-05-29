@@ -4,7 +4,6 @@
             <template #header>
                 <div class="card-header">
                     <span>特殊发动机</span>
-                    <el-button type="primary" @click="resetForm">新增特殊发动机</el-button>
                 </div>
             </template>
 
@@ -49,10 +48,12 @@
                     </el-col>
                 </el-row>
 
-                <el-form-item>
-                    <el-button type="primary" @click="submitForm">{{ formData.id ? '更新' : '添加' }}</el-button>
-                    <el-button @click="resetForm">重置</el-button>
-                </el-form-item>
+                <div style="margin-top: 30px;">
+                    <el-form-item>
+                        <el-button type="primary" @click="submitForm">{{ formData.id ? '更新' : '添加' }}</el-button>
+                        <el-button @click="resetForm">重置</el-button>
+                    </el-form-item>
+                </div>
             </el-form>
         </el-card>
     </div>
@@ -113,12 +114,22 @@ function handleEngineCodeInput(value: string) {
 
 // 处理行点击
 function handleRowClick(row: any) {
-    Object.assign(formData, row)
+    Object.assign(formData, {
+        id: row.id,
+        engine_code: row.engine_code,
+        engine_name: row.engine_name,
+        gear: row.gear
+    })
 }
 
 // 处理编辑
 function handleEdit(row: any) {
-    Object.assign(formData, row)
+    Object.assign(formData, {
+        id: row.id,
+        engine_code: row.engine_code,
+        engine_name: row.engine_name,
+        gear: row.gear
+    })
 }
 
 // 处理删除
@@ -146,17 +157,25 @@ async function handleDelete(id: number) {
 async function submitForm() {
     if (!formRef.value) return
 
+    // 将发动机代码转为大写（在验证之前）
+    formData.engine_code = formData.engine_code.toUpperCase()
+
     await formRef.value.validate(async (valid) => {
         if (valid) {
             try {
-                // 将发动机代码转为大写
-                formData.engine_code = formData.engine_code.toUpperCase()
+                // 创建普通对象副本，避免传递响应式对象
+                const submitData = {
+                    id: formData.id,
+                    engine_code: formData.engine_code,
+                    engine_name: formData.engine_name,
+                    gear: formData.gear
+                }
 
                 if (formData.id) {
-                    await window.api.updateSpecialEngine(formData)
+                    await window.api.updateSpecialEngine(submitData)
                     ElMessage.success('更新成功')
                 } else {
-                    await window.api.addSpecialEngine(formData)
+                    await window.api.addSpecialEngine(submitData)
                     ElMessage.success('添加成功')
                 }
 
@@ -173,12 +192,10 @@ async function submitForm() {
 // 重置表单
 function resetForm() {
     formRef.value?.resetFields()
-    Object.assign(formData, {
-        id: null,
-        engine_code: '',
-        engine_name: '',
-        gear: ''
-    })
+    formData.id = null
+    formData.engine_code = ''
+    formData.engine_name = ''
+    formData.gear = ''
 }
 </script>
 
