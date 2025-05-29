@@ -110,9 +110,8 @@ CREATE TABLE IF NOT EXISTS planned_colors (
 
 ### 环境要求
 
-- **Node.js**: 16+ (推荐 18+)
+- **Node.js**: 22+
 - **包管理器**: pnpm（推荐）或 npm
-- **操作系统**: Windows 10/11, macOS, Linux
 
 ### 安装步骤
 
