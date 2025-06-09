@@ -16,10 +16,21 @@ export function setupIpcHandlers() {
   // 获取所有生产线
   ipcMain.handle('get-production-lines', async () => {
     try {
-      return await query('SELECT * FROM production_lines ORDER BY line_type, line_number');
-    } catch (error) {
+      return await query('SELECT * FROM production_lines ORDER BY line_number');
+    } catch (error: any) {
       console.error('获取生产线失败:', error);
-      throw new Error('获取生产线失败');
+      
+      // 检查是否为连接错误
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('connect ECONNREFUSED')) {
+        throw new Error('数据库连接失败，请检查数据库服务是否正常运行');
+      }
+      
+      // 检查是否为表不存在错误
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.message?.includes("doesn't exist")) {
+        throw new Error('数据表不存在，请检查数据库结构是否正确');
+      }
+      
+      throw new Error(`获取生产线数据失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -130,9 +141,25 @@ export function setupIpcHandlers() {
         'SELECT * FROM production_line_special_info WHERE production_line_id = ? AND code_type = ?',
         [lineId, codeType]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取生产线特殊信息失败:', error);
-      throw new Error('获取生产线特殊信息失败');
+      
+      // 检查是否为连接错误
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('connect ECONNREFUSED')) {
+        throw new Error('数据库连接失败，请检查数据库服务是否正常运行');
+      }
+      
+      // 检查是否为表不存在错误
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.message?.includes("doesn't exist")) {
+        throw new Error('特殊信息数据表不存在，请检查数据库结构是否正确');
+      }
+      
+      // 检查是否为参数错误
+      if (error.code === 'ER_BAD_FIELD_ERROR' || error.message?.includes('Unknown column')) {
+        throw new Error('数据库字段错误，请检查数据库结构是否正确');
+      }
+      
+      throw new Error(`获取生产线特殊信息失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -216,9 +243,20 @@ export function setupIpcHandlers() {
   ipcMain.handle('get-special-engines', async () => {
     try {
       return await query('SELECT * FROM special_engines ORDER BY engine_code');
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取特殊发动机失败:', error);
-      throw new Error('获取特殊发动机失败');
+      
+      // 检查是否为连接错误
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('connect ECONNREFUSED')) {
+        throw new Error('数据库连接失败，请检查数据库服务是否正常运行');
+      }
+      
+      // 检查是否为表不存在错误
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.message?.includes("doesn't exist")) {
+        throw new Error('特殊发动机数据表不存在，请检查数据库结构是否正确');
+      }
+      
+      throw new Error(`获取特殊发动机数据失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -301,9 +339,20 @@ export function setupIpcHandlers() {
   ipcMain.handle('get-planned-colors', async () => {
     try {
       return await query('SELECT * FROM planned_colors ORDER BY color_code');
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取计划用颜色失败:', error);
-      throw new Error('获取计划用颜色失败');
+      
+      // 检查是否为连接错误
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('connect ECONNREFUSED')) {
+        throw new Error('数据库连接失败，请检查数据库服务是否正常运行');
+      }
+      
+      // 检查是否为表不存在错误
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.message?.includes("doesn't exist")) {
+        throw new Error('计划用颜色数据表不存在，请检查数据库结构是否正确');
+      }
+      
+      throw new Error(`获取计划用颜色数据失败: ${error.message || '未知错误'}`);
     }
   });
 
