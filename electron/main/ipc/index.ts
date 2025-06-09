@@ -40,9 +40,23 @@ export function setupIpcHandlers() {
       );
 
       return { success: true, id: result.insertId };
-    } catch (error) {
+    } catch (error: any) {
       console.error('添加生产线失败:', error);
-      throw new Error('添加生产线失败');
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        if (error.message?.includes('line_number')) {
+          throw new Error(`生产线编号 "${data.line_number}" 已存在，请使用不同的编号`);
+        }
+        throw new Error('该生产线信息已存在，请检查输入数据');
+      }
+      
+      // 检查约束错误
+      if (error.code === 'ER_CHECK_CONSTRAINT_VIOLATED' || error.message?.includes('CHECK constraint')) {
+        throw new Error('输入数据不符合要求，请检查生产线类型等字段是否正确');
+      }
+      
+      throw new Error(`添加生产线失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -66,9 +80,23 @@ export function setupIpcHandlers() {
       );
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('更新生产线失败:', error);
-      throw new Error('更新生产线失败');
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        if (error.message?.includes('line_number')) {
+          throw new Error(`生产线编号 "${data.line_number}" 已被其他记录使用，请使用不同的编号`);
+        }
+        throw new Error('该生产线信息与现有记录冲突，请检查输入数据');
+      }
+      
+      // 检查约束错误
+      if (error.code === 'ER_CHECK_CONSTRAINT_VIOLATED' || error.message?.includes('CHECK constraint')) {
+        throw new Error('输入数据不符合要求，请检查生产线类型等字段是否正确');
+      }
+      
+      throw new Error(`更新生产线失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -78,9 +106,20 @@ export function setupIpcHandlers() {
       // 由于设置了外键级联删除，删除生产线时会自动删除相关的特殊信息
       await query('DELETE FROM production_lines WHERE id = ?', [id]);
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除生产线失败:', error);
-      throw new Error('删除生产线失败');
+      
+      // 检查是否为外键约束错误
+      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.message?.includes('foreign key constraint')) {
+        throw new Error('无法删除该生产线，因为它正在被其他数据引用。请先删除相关的引用数据。');
+      }
+      
+      // 检查是否为记录不存在错误
+      if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.message?.includes('Cannot delete or update a parent row')) {
+        throw new Error('删除失败：该生产线不存在或已被删除。');
+      }
+      
+      throw new Error(`删除生产线失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -111,7 +150,7 @@ export function setupIpcHandlers() {
       const lineRows = lineResult as any[];
 
       if (!lineRows || lineRows.length === 0) {
-        throw new Error('找不到对应的生产线');
+        throw new Error('找不到对应的生产线，请刷新页面后重试');
       }
 
       const line_type = lineRows[0].line_type;
@@ -124,7 +163,8 @@ export function setupIpcHandlers() {
 
       const existingRows = existingResult as any[];
       if (existingRows && existingRows.length > 0) {
-        throw new Error('该特殊信息已存在');
+        const codeTypeName = data.code_type === 'WhiteBodyCode' ? '白车身码' : '颜色码';
+        throw new Error(`${codeTypeName} "${data.code_value}" 在该生产线中已存在，请使用不同的代码`);
       }
 
       const result = await query(
@@ -135,9 +175,21 @@ export function setupIpcHandlers() {
       );
 
       return { success: true, id: result.insertId };
-    } catch (error) {
+    } catch (error: any) {
       console.error('添加生产线特殊信息失败:', error);
-      throw new Error('添加生产线特殊信息失败: ' + (error as Error).message);
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        const codeTypeName = data.code_type === 'WhiteBodyCode' ? '白车身码' : '颜色码';
+        throw new Error(`${codeTypeName} "${data.code_value}" 已存在，请使用不同的代码`);
+      }
+      
+      // 如果错误信息已经是自定义的，直接抛出
+      if (error.message && !error.message.includes('添加生产线特殊信息失败')) {
+        throw error;
+      }
+      
+      throw new Error(`添加生产线特殊信息失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -146,9 +198,15 @@ export function setupIpcHandlers() {
     try {
       await query('DELETE FROM production_line_special_info WHERE id = ?', [id]);
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除生产线特殊信息失败:', error);
-      throw new Error('删除生产线特殊信息失败');
+      
+      // 检查是否为外键约束错误
+      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.message?.includes('foreign key constraint')) {
+        throw new Error('无法删除该特殊信息，因为它正在被其他数据引用。请先删除相关的引用数据。');
+      }
+      
+      throw new Error(`删除生产线特殊信息失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -177,9 +235,18 @@ export function setupIpcHandlers() {
       );
 
       return { success: true, id: result.insertId };
-    } catch (error) {
+    } catch (error: any) {
       console.error('添加特殊发动机失败:', error);
-      throw new Error('添加特殊发动机失败');
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        if (error.message?.includes('engine_code')) {
+          throw new Error(`发动机代码 "${data.engine_code}" 已存在，请使用不同的代码`);
+        }
+        throw new Error('该发动机信息已存在，请检查输入数据');
+      }
+      
+      throw new Error(`添加特殊发动机失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -196,9 +263,18 @@ export function setupIpcHandlers() {
       );
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('更新特殊发动机失败:', error);
-      throw new Error('更新特殊发动机失败');
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        if (error.message?.includes('engine_code')) {
+          throw new Error(`发动机代码 "${data.engine_code}" 已被其他记录使用，请使用不同的代码`);
+        }
+        throw new Error('该发动机信息与现有记录冲突，请检查输入数据');
+      }
+      
+      throw new Error(`更新特殊发动机失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -207,9 +283,15 @@ export function setupIpcHandlers() {
     try {
       await query('DELETE FROM special_engines WHERE id = ?', [id]);
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除特殊发动机失败:', error);
-      throw new Error('删除特殊发动机失败');
+      
+      // 检查是否为外键约束错误
+      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.message?.includes('foreign key constraint')) {
+        throw new Error('无法删除该特殊发动机，因为它正在被其他数据引用。请先删除相关的引用数据。');
+      }
+      
+      throw new Error(`删除特殊发动机失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -238,9 +320,18 @@ export function setupIpcHandlers() {
       );
 
       return { success: true, id: result.insertId };
-    } catch (error) {
+    } catch (error: any) {
       console.error('添加计划用颜色失败:', error);
-      throw new Error('添加计划用颜色失败');
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        if (error.message?.includes('color_code')) {
+          throw new Error(`颜色代码 "${data.color_code}" 已存在，请使用不同的代码`);
+        }
+        throw new Error('该颜色信息已存在，请检查输入数据');
+      }
+      
+      throw new Error(`添加计划用颜色失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -257,9 +348,18 @@ export function setupIpcHandlers() {
       );
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('更新计划用颜色失败:', error);
-      throw new Error('更新计划用颜色失败');
+      
+      // 检查是否为重复键错误
+      if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
+        if (error.message?.includes('color_code')) {
+          throw new Error(`颜色代码 "${data.color_code}" 已被其他记录使用，请使用不同的代码`);
+        }
+        throw new Error('该颜色信息与现有记录冲突，请检查输入数据');
+      }
+      
+      throw new Error(`更新计划用颜色失败: ${error.message || '未知错误'}`);
     }
   });
 
@@ -268,9 +368,15 @@ export function setupIpcHandlers() {
     try {
       await query('DELETE FROM planned_colors WHERE id = ?', [id]);
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除计划用颜色失败:', error);
-      throw new Error('删除计划用颜色失败');
+      
+      // 检查是否为外键约束错误
+      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.message?.includes('foreign key constraint')) {
+        throw new Error('无法删除该计划用颜色，因为它正在被其他数据引用。请先删除相关的引用数据。');
+      }
+      
+      throw new Error(`删除计划用颜色失败: ${error.message || '未知错误'}`);
     }
   });
 }

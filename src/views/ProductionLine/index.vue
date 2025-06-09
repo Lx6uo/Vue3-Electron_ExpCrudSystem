@@ -255,8 +255,17 @@ async function loadSpecialCodes() {
         const codeType = formData.line_type === '涂装' ? 'ColorCode' : 'WhiteBodyCode'
         const result = await window.api.getProductionLineSpecialInfo(selectedLineId.value, codeType)
         specialCodes.value = result || [] // 确保返回空数组而不是undefined
-    } catch (error) {
-        ElMessage.error('加载特殊信息失败')
+    } catch (error: any) {
+        // 显示详细错误信息的确认弹窗
+        await ElMessageBox.alert(
+            error.message || '加载特殊信息失败，请重试',
+            '加载失败',
+            {
+                confirmButtonText: '确定',
+                type: 'error',
+                dangerouslyUseHTMLString: false
+            }
+        )
         console.error(error)
     }
 }
@@ -345,8 +354,17 @@ async function submitForm() {
                 }
 
                 await loadProductionLines()
-            } catch (error) {
-                ElMessage.error('操作失败')
+            } catch (error: any) {
+                // 显示详细错误信息的确认弹窗
+                await ElMessageBox.alert(
+                    error.message || '操作失败，请重试',
+                    '操作失败',
+                    {
+                        confirmButtonText: '确定',
+                        type: 'error',
+                        dangerouslyUseHTMLString: false
+                    }
+                )
                 console.error(error)
             }
         }
@@ -405,8 +423,17 @@ async function addSpecialCode(codeType: string) {
         ElMessage.success('添加成功')
         specialCodeInput.value = ''
         await loadSpecialCodes()
-    } catch (error) {
-        ElMessage.error('添加失败，可能是特殊码已存在')
+    } catch (error: any) {
+        // 显示详细错误信息的确认弹窗
+        await ElMessageBox.alert(
+            error.message || '添加特殊码失败，请重试',
+            '添加失败',
+            {
+                confirmButtonText: '确定',
+                type: 'error',
+                dangerouslyUseHTMLString: false
+            }
+        )
         console.error(error)
     }
 }
@@ -425,7 +452,16 @@ async function deleteSpecialCode(id: number) {
         await loadSpecialCodes()
     } catch (error: any) {
         if (error !== 'cancel') {
-            ElMessage.error('删除失败')
+            // 显示详细错误信息的确认弹窗
+            await ElMessageBox.alert(
+                error.message || '删除特殊码失败，请重试',
+                '删除失败',
+                {
+                    confirmButtonText: '确定',
+                    type: 'error',
+                    dangerouslyUseHTMLString: false
+                }
+            )
             console.error(error)
         }
     }

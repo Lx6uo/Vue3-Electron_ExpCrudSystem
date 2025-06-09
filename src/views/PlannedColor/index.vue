@@ -167,8 +167,17 @@ async function submitForm() {
 
                 await loadPlannedColors()
                 resetForm()
-            } catch (error) {
-                ElMessage.error('操作失败')
+            } catch (error: any) {
+                // 显示详细错误信息的确认弹窗
+                await ElMessageBox.alert(
+                    error.message || '操作失败，请重试',
+                    '操作失败',
+                    {
+                        confirmButtonText: '确定',
+                        type: 'error',
+                        dangerouslyUseHTMLString: false
+                    }
+                )
                 console.error(error)
             }
         }
