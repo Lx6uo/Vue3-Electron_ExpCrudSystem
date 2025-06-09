@@ -80,6 +80,25 @@ app.whenReady().then(async () => {
     const configPath = join(app.isPackaged ? process.resourcesPath : ROOT_PATH.dist, 'config/database.json')
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
 
+    // MySQL配置
+    const dbConfig = {
+      mysql: config.mysql || {
+        host: 'localhost',
+        port: 3306,
+        user: 'root',
+        password: '',
+        database: 'production_management'
+      },
+      database: config.database || 'production_management'
+    }
+
+    // 连接数据库
+    const connected = await connectToDatabase(dbConfig)
+    if (!connected) {
+      dialog.showErrorBox('数据库连接失败', '无法连接到MySQL数据库，请确保MySQL服务已启动并配置正确')
+    }
+
+    /* SQLite配置代码 - 已注释
     // 简化配置，SQLite只需要数据库名称
     const sqliteConfig = {
       database: config.database || 'production_management'
@@ -90,6 +109,7 @@ app.whenReady().then(async () => {
     if (!connected) {
       dialog.showErrorBox('数据库连接失败', '无法创建或连接到SQLite数据库')
     }
+    */
 
     // 设置IPC处理程序
     setupIpcHandlers()

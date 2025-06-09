@@ -2,6 +2,62 @@
 
 基于Electron+Vue3的生产线信息管理桌面应用，用于管理生产线、特殊发动机和计划用颜色配置等基础信息。支持完整的CRUD操作，具备友好的用户界面和数据验证功能。
 
+## 安装与运行
+
+### 环境要求
+
+- **Node.js**: 22+
+- **包管理器**: pnpm（推荐）或 npm
+
+### 安装步骤
+
+1. 克隆项目
+
+```bash
+git clone [项目地址]
+cd [项目目录]
+```
+
+2. 安装依赖
+
+使用 pnpm（推荐）：
+```bash
+pnpm install --registry=https://registry.npmmirror.com/
+```
+
+或使用 npm：
+```bash
+npm install --registry=https://registry.npmmirror.com/
+```
+
+3. 配置数据库（可选）
+
+数据库会自动初始化，如需自定义数据库名称，可编辑 `config/database.json`：
+
+```json
+{
+  "database": "production_management"
+}
+```
+
+4. 开发模式运行
+
+```bash
+npm run dev
+# 或
+pnpm dev
+```
+
+5. 构建生产版本
+
+```bash
+npm run build
+# 或
+pnpm build
+```
+
+构建完成后，可执行文件将生成在 `release` 目录下。
+
 ## 技术栈
 
 - **前端框架**：Vue 3.3+ + TypeScript + Composition API
@@ -105,62 +161,6 @@ CREATE TABLE IF NOT EXISTS planned_colors (
 - **数据完整性**：通过CHECK约束确保枚举值的有效性
 - **唯一性约束**：关键字段（如线体编号、发动机代码、颜色代码）设置唯一约束
 - **触发器机制**：自动更新 `updated_at` 字段时间戳
-
-## 安装与运行
-
-### 环境要求
-
-- **Node.js**: 22+
-- **包管理器**: pnpm（推荐）或 npm
-
-### 安装步骤
-
-1. 克隆项目
-
-```bash
-git clone [项目地址]
-cd [项目目录]
-```
-
-2. 安装依赖
-
-使用 pnpm（推荐）：
-```bash
-pnpm install --registry=https://registry.npmmirror.com/
-```
-
-或使用 npm：
-```bash
-npm install --registry=https://registry.npmmirror.com/
-```
-
-3. 配置数据库（可选）
-
-数据库会自动初始化，如需自定义数据库名称，可编辑 `config/database.json`：
-
-```json
-{
-  "database": "production_management"
-}
-```
-
-4. 开发模式运行
-
-```bash
-npm run dev
-# 或
-pnpm dev
-```
-
-5. 构建生产版本
-
-```bash
-npm run build
-# 或
-pnpm build
-```
-
-构建完成后，可执行文件将生成在 `release` 目录下。
 
 ## 使用说明
 
