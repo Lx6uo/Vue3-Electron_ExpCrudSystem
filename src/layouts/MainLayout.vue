@@ -94,9 +94,15 @@ const currentModuleTitle = computed(() => {
 })
 
 // 获取当前用户
-onMounted(() => {
-  // 由于Electron已禁用，使用模拟数据
-  currentUser.value = '测试用户'
+onMounted(async () => {
+  try {
+    // 从Windows系统获取真实用户名
+    const username = await window.api.getCurrentUser()
+    currentUser.value = username || '未知用户'
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    currentUser.value = '未知用户'
+  }
 })
 </script>
 
