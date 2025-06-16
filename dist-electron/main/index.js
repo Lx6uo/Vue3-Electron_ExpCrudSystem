@@ -18328,21 +18328,28 @@ let CloseStatement$3 = class CloseStatement {
 };
 var close_statement$1 = CloseStatement$3;
 var field_flags = {};
-field_flags.NOT_NULL = 1;
-field_flags.PRI_KEY = 2;
-field_flags.UNIQUE_KEY = 4;
-field_flags.MULTIPLE_KEY = 8;
-field_flags.BLOB = 16;
-field_flags.UNSIGNED = 32;
-field_flags.ZEROFILL = 64;
-field_flags.BINARY = 128;
-field_flags.ENUM = 256;
-field_flags.AUTO_INCREMENT = 512;
-field_flags.TIMESTAMP = 1024;
-field_flags.SET = 2048;
-field_flags.NO_DEFAULT_VALUE = 4096;
-field_flags.ON_UPDATE_NOW = 8192;
-field_flags.NUM = 32768;
+var hasRequiredField_flags;
+function requireField_flags() {
+  if (hasRequiredField_flags)
+    return field_flags;
+  hasRequiredField_flags = 1;
+  field_flags.NOT_NULL = 1;
+  field_flags.PRI_KEY = 2;
+  field_flags.UNIQUE_KEY = 4;
+  field_flags.MULTIPLE_KEY = 8;
+  field_flags.BLOB = 16;
+  field_flags.UNSIGNED = 32;
+  field_flags.ZEROFILL = 64;
+  field_flags.BINARY = 128;
+  field_flags.ENUM = 256;
+  field_flags.AUTO_INCREMENT = 512;
+  field_flags.TIMESTAMP = 1024;
+  field_flags.SET = 2048;
+  field_flags.NO_DEFAULT_VALUE = 4096;
+  field_flags.ON_UPDATE_NOW = 8192;
+  field_flags.NUM = 32768;
+  return field_flags;
+}
 const Packet$b = packet;
 const StringParser$2 = string;
 const CharsetToEncoding$7 = requireCharset_encodings();
@@ -18406,7 +18413,7 @@ class ColumnDefinition {
     for (const t in Types2) {
       typeNames2[Types2[t]] = t;
     }
-    const fiedFlags = field_flags;
+    const fiedFlags = requireField_flags();
     const flagNames2 = [];
     const inspectFlags = this.flags;
     for (const f in fiedFlags) {
@@ -21465,7 +21472,7 @@ let CloseStatement$2 = class CloseStatement2 extends Command$7 {
   }
 };
 var close_statement = CloseStatement$2;
-const FieldFlags$1 = field_flags;
+const FieldFlags$1 = requireField_flags();
 const Charsets$2 = requireCharsets();
 const Types$1 = requireTypes();
 const helpers$1 = helpers$4;
@@ -21650,7 +21657,7 @@ function getBinaryParser$2(fields2, options, config) {
   return parserCache.getParser("binary", fields2, options, config, compile);
 }
 var binary_parser = getBinaryParser$2;
-const FieldFlags = field_flags;
+const FieldFlags = requireField_flags();
 const Charsets$1 = requireCharsets();
 const Types = requireTypes();
 const helpers = helpers$4;
@@ -26164,14 +26171,22 @@ function setupIpcHandlers() {
     return getCurrentUser();
   });
   electron.ipcMain.handle("get-production-lines", async () => {
+    var _a, _b;
     try {
-      return await query("SELECT * FROM production_lines ORDER BY line_type, line_number");
+      return await query("SELECT * FROM production_lines ORDER BY line_number");
     } catch (error) {
       console.error("获取生产线失败:", error);
-      throw new Error("获取生产线失败");
+      if (error.code === "ECONNREFUSED" || ((_a = error.message) == null ? void 0 : _a.includes("connect ECONNREFUSED"))) {
+        throw new Error("数据库连接失败，请检查数据库服务是否正常运行");
+      }
+      if (error.code === "ER_NO_SUCH_TABLE" || ((_b = error.message) == null ? void 0 : _b.includes("doesn't exist"))) {
+        throw new Error("数据表不存在，请检查数据库结构是否正确");
+      }
+      throw new Error(`获取生产线数据失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("add-production-line", async (_, data) => {
+    var _a, _b, _c;
     try {
       const operator = getCurrentUser();
       data.line_number = data.line_number.toUpperCase();
@@ -26196,10 +26211,20 @@ function setupIpcHandlers() {
       return { success: true, id: result.insertId };
     } catch (error) {
       console.error("添加生产线失败:", error);
-      throw new Error("添加生产线失败");
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        if ((_b = error.message) == null ? void 0 : _b.includes("line_number")) {
+          throw new Error(`生产线编号 "${data.line_number}" 已存在，请使用不同的编号`);
+        }
+        throw new Error("该生产线信息已存在，请检查输入数据");
+      }
+      if (error.code === "ER_CHECK_CONSTRAINT_VIOLATED" || ((_c = error.message) == null ? void 0 : _c.includes("CHECK constraint"))) {
+        throw new Error("输入数据不符合要求，请检查生产线类型等字段是否正确");
+      }
+      throw new Error(`添加生产线失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("update-production-line", async (_, data) => {
+    var _a, _b, _c;
     try {
       const operator = getCurrentUser();
       data.line_number = data.line_number.toUpperCase();
@@ -26227,19 +26252,36 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error("更新生产线失败:", error);
-      throw new Error("更新生产线失败");
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        if ((_b = error.message) == null ? void 0 : _b.includes("line_number")) {
+          throw new Error(`生产线编号 "${data.line_number}" 已被其他记录使用，请使用不同的编号`);
+        }
+        throw new Error("该生产线信息与现有记录冲突，请检查输入数据");
+      }
+      if (error.code === "ER_CHECK_CONSTRAINT_VIOLATED" || ((_c = error.message) == null ? void 0 : _c.includes("CHECK constraint"))) {
+        throw new Error("输入数据不符合要求，请检查生产线类型等字段是否正确");
+      }
+      throw new Error(`更新生产线失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("delete-production-line", async (_, { id }) => {
+    var _a, _b;
     try {
       await query("DELETE FROM production_lines WHERE id = ?", [id]);
       return { success: true };
     } catch (error) {
       console.error("删除生产线失败:", error);
-      throw new Error("删除生产线失败");
+      if (error.code === "ER_ROW_IS_REFERENCED_2" || ((_a = error.message) == null ? void 0 : _a.includes("foreign key constraint"))) {
+        throw new Error("无法删除该生产线，因为它正在被其他数据引用。请先删除相关的引用数据。");
+      }
+      if (error.code === "ER_NO_REFERENCED_ROW_2" || ((_b = error.message) == null ? void 0 : _b.includes("Cannot delete or update a parent row"))) {
+        throw new Error("删除失败：该生产线不存在或已被删除。");
+      }
+      throw new Error(`删除生产线失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("get-production-line-special-info", async (_, { lineId, codeType }) => {
+    var _a, _b, _c;
     try {
       return await query(
         "SELECT * FROM production_line_special_info WHERE production_line_id = ? AND code_type = ?",
@@ -26247,10 +26289,20 @@ function setupIpcHandlers() {
       );
     } catch (error) {
       console.error("获取生产线特殊信息失败:", error);
-      throw new Error("获取生产线特殊信息失败");
+      if (error.code === "ECONNREFUSED" || ((_a = error.message) == null ? void 0 : _a.includes("connect ECONNREFUSED"))) {
+        throw new Error("数据库连接失败，请检查数据库服务是否正常运行");
+      }
+      if (error.code === "ER_NO_SUCH_TABLE" || ((_b = error.message) == null ? void 0 : _b.includes("doesn't exist"))) {
+        throw new Error("特殊信息数据表不存在，请检查数据库结构是否正确");
+      }
+      if (error.code === "ER_BAD_FIELD_ERROR" || ((_c = error.message) == null ? void 0 : _c.includes("Unknown column"))) {
+        throw new Error("数据库字段错误，请检查数据库结构是否正确");
+      }
+      throw new Error(`获取生产线特殊信息失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("add-production-line-special-info", async (_, data) => {
+    var _a;
     try {
       const operator = getCurrentUser();
       if (data.code_type === "WhiteBodyCode") {
@@ -26259,7 +26311,7 @@ function setupIpcHandlers() {
       const lineResult = await query("SELECT line_type FROM production_lines WHERE id = ?", [data.production_line_id]);
       const lineRows = lineResult;
       if (!lineRows || lineRows.length === 0) {
-        throw new Error("找不到对应的生产线");
+        throw new Error("找不到对应的生产线，请刷新页面后重试");
       }
       const line_type = lineRows[0].line_type;
       const existingResult = await query(
@@ -26268,7 +26320,8 @@ function setupIpcHandlers() {
       );
       const existingRows = existingResult;
       if (existingRows && existingRows.length > 0) {
-        throw new Error("该特殊信息已存在");
+        const codeTypeName = data.code_type === "WhiteBodyCode" ? "白车身码" : "颜色码";
+        throw new Error(`${codeTypeName} "${data.code_value}" 在该生产线中已存在，请使用不同的代码`);
       }
       const result = await query(
         `INSERT INTO production_line_special_info 
@@ -26279,27 +26332,46 @@ function setupIpcHandlers() {
       return { success: true, id: result.insertId };
     } catch (error) {
       console.error("添加生产线特殊信息失败:", error);
-      throw new Error("添加生产线特殊信息失败: " + error.message);
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        const codeTypeName = data.code_type === "WhiteBodyCode" ? "白车身码" : "颜色码";
+        throw new Error(`${codeTypeName} "${data.code_value}" 已存在，请使用不同的代码`);
+      }
+      if (error.message && !error.message.includes("添加生产线特殊信息失败")) {
+        throw error;
+      }
+      throw new Error(`添加生产线特殊信息失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("delete-production-line-special-info", async (_, { id }) => {
+    var _a;
     try {
       await query("DELETE FROM production_line_special_info WHERE id = ?", [id]);
       return { success: true };
     } catch (error) {
       console.error("删除生产线特殊信息失败:", error);
-      throw new Error("删除生产线特殊信息失败");
+      if (error.code === "ER_ROW_IS_REFERENCED_2" || ((_a = error.message) == null ? void 0 : _a.includes("foreign key constraint"))) {
+        throw new Error("无法删除该特殊信息，因为它正在被其他数据引用。请先删除相关的引用数据。");
+      }
+      throw new Error(`删除生产线特殊信息失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("get-special-engines", async () => {
+    var _a, _b;
     try {
       return await query("SELECT * FROM special_engines ORDER BY engine_code");
     } catch (error) {
       console.error("获取特殊发动机失败:", error);
-      throw new Error("获取特殊发动机失败");
+      if (error.code === "ECONNREFUSED" || ((_a = error.message) == null ? void 0 : _a.includes("connect ECONNREFUSED"))) {
+        throw new Error("数据库连接失败，请检查数据库服务是否正常运行");
+      }
+      if (error.code === "ER_NO_SUCH_TABLE" || ((_b = error.message) == null ? void 0 : _b.includes("doesn't exist"))) {
+        throw new Error("特殊发动机数据表不存在，请检查数据库结构是否正确");
+      }
+      throw new Error(`获取特殊发动机数据失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("add-special-engine", async (_, data) => {
+    var _a, _b;
     try {
       const operator = getCurrentUser();
       const result = await query(
@@ -26311,10 +26383,17 @@ function setupIpcHandlers() {
       return { success: true, id: result.insertId };
     } catch (error) {
       console.error("添加特殊发动机失败:", error);
-      throw new Error("添加特殊发动机失败");
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        if ((_b = error.message) == null ? void 0 : _b.includes("engine_code")) {
+          throw new Error(`发动机代码 "${data.engine_code}" 已存在，请使用不同的代码`);
+        }
+        throw new Error("该发动机信息已存在，请检查输入数据");
+      }
+      throw new Error(`添加特殊发动机失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("update-special-engine", async (_, data) => {
+    var _a, _b;
     try {
       const operator = getCurrentUser();
       await query(
@@ -26326,27 +26405,45 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error("更新特殊发动机失败:", error);
-      throw new Error("更新特殊发动机失败");
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        if ((_b = error.message) == null ? void 0 : _b.includes("engine_code")) {
+          throw new Error(`发动机代码 "${data.engine_code}" 已被其他记录使用，请使用不同的代码`);
+        }
+        throw new Error("该发动机信息与现有记录冲突，请检查输入数据");
+      }
+      throw new Error(`更新特殊发动机失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("delete-special-engine", async (_, { id }) => {
+    var _a;
     try {
       await query("DELETE FROM special_engines WHERE id = ?", [id]);
       return { success: true };
     } catch (error) {
       console.error("删除特殊发动机失败:", error);
-      throw new Error("删除特殊发动机失败");
+      if (error.code === "ER_ROW_IS_REFERENCED_2" || ((_a = error.message) == null ? void 0 : _a.includes("foreign key constraint"))) {
+        throw new Error("无法删除该特殊发动机，因为它正在被其他数据引用。请先删除相关的引用数据。");
+      }
+      throw new Error(`删除特殊发动机失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("get-planned-colors", async () => {
+    var _a, _b;
     try {
       return await query("SELECT * FROM planned_colors ORDER BY color_code");
     } catch (error) {
       console.error("获取计划用颜色失败:", error);
-      throw new Error("获取计划用颜色失败");
+      if (error.code === "ECONNREFUSED" || ((_a = error.message) == null ? void 0 : _a.includes("connect ECONNREFUSED"))) {
+        throw new Error("数据库连接失败，请检查数据库服务是否正常运行");
+      }
+      if (error.code === "ER_NO_SUCH_TABLE" || ((_b = error.message) == null ? void 0 : _b.includes("doesn't exist"))) {
+        throw new Error("计划用颜色数据表不存在，请检查数据库结构是否正确");
+      }
+      throw new Error(`获取计划用颜色数据失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("add-planned-color", async (_, data) => {
+    var _a, _b;
     try {
       const operator = getCurrentUser();
       const result = await query(
@@ -26358,10 +26455,17 @@ function setupIpcHandlers() {
       return { success: true, id: result.insertId };
     } catch (error) {
       console.error("添加计划用颜色失败:", error);
-      throw new Error("添加计划用颜色失败");
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        if ((_b = error.message) == null ? void 0 : _b.includes("color_code")) {
+          throw new Error(`颜色代码 "${data.color_code}" 已存在，请使用不同的代码`);
+        }
+        throw new Error("该颜色信息已存在，请检查输入数据");
+      }
+      throw new Error(`添加计划用颜色失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("update-planned-color", async (_, data) => {
+    var _a, _b;
     try {
       const operator = getCurrentUser();
       await query(
@@ -26373,16 +26477,26 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error("更新计划用颜色失败:", error);
-      throw new Error("更新计划用颜色失败");
+      if (error.code === "ER_DUP_ENTRY" || ((_a = error.message) == null ? void 0 : _a.includes("Duplicate entry"))) {
+        if ((_b = error.message) == null ? void 0 : _b.includes("color_code")) {
+          throw new Error(`颜色代码 "${data.color_code}" 已被其他记录使用，请使用不同的代码`);
+        }
+        throw new Error("该颜色信息与现有记录冲突，请检查输入数据");
+      }
+      throw new Error(`更新计划用颜色失败: ${error.message || "未知错误"}`);
     }
   });
   electron.ipcMain.handle("delete-planned-color", async (_, { id }) => {
+    var _a;
     try {
       await query("DELETE FROM planned_colors WHERE id = ?", [id]);
       return { success: true };
     } catch (error) {
       console.error("删除计划用颜色失败:", error);
-      throw new Error("删除计划用颜色失败");
+      if (error.code === "ER_ROW_IS_REFERENCED_2" || ((_a = error.message) == null ? void 0 : _a.includes("foreign key constraint"))) {
+        throw new Error("无法删除该计划用颜色，因为它正在被其他数据引用。请先删除相关的引用数据。");
+      }
+      throw new Error(`删除计划用颜色失败: ${error.message || "未知错误"}`);
     }
   });
 }

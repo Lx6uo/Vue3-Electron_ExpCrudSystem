@@ -7,7 +7,7 @@
 ### 环境要求
 
 - **Node.js**: 22+
-- **包管理器**: pnpm（推荐）或 npm
+- **Node包管理器**: pnpm（推荐）或 npm
 
 ### 安装步骤
 
@@ -18,7 +18,7 @@ git clone [项目地址]
 cd [项目目录]
 ```
 
-2. 安装依赖
+2. 安装依赖(使用国内镜像源)
 
 使用 pnpm（推荐）：
 ```bash
@@ -30,7 +30,7 @@ pnpm install --registry=https://registry.npmmirror.com/
 npm install --registry=https://registry.npmmirror.com/
 ```
 
-3. 配置数据库（可选）
+3. 配置数据库
 
 数据库会自动初始化，如需自定义数据库名称，可编辑 `config/database.json`：
 
@@ -48,14 +48,6 @@ npm run dev
 pnpm dev
 ```
 
-5. 构建生产版本
-
-```bash
-npm run build
-# 或
-pnpm build
-```
-
 构建完成后，可执行文件将生成在 `release` 目录下。
 
 ## 技术栈
@@ -63,8 +55,8 @@ pnpm build
 - **前端框架**：Vue 3.3+ + TypeScript + Composition API
 - **UI组件库**：Element Plus 2.4+
 - **桌面应用框架**：Electron 36.0
-- **数据库**：SQLite
-- **数据库访问**：better-sqlite3 11.10+
+- **数据库**：MySQL
+- **数据库访问**：mysql2
 - **构建工具**：Vite 4.4+
 - **状态管理**：Pinia 2.1+
 - **样式预处理**：Sass
@@ -91,9 +83,6 @@ pnpm build
 - **数据完整性**：颜色代码唯一性和格式验证
 - **表单优化**：改进的表单布局和用户体验
 
-## 数据库架构
-
-应用使用SQLite数据库，会自动创建并初始化数据库文件 `production_management.db`，无需手动设置。数据库文件保存在应用的数据目录下。
 
 ### 数据库表结构
 
